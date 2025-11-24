@@ -384,8 +384,38 @@
                 tooltip.style.display = 'block';
             })
                 .on("mousemove", function (event) {
-                    tooltip.style.left = (event.pageX + 15) + 'px';
-                    tooltip.style.top = (event.pageY - 15) + 'px';
+                    const container = document.getElementById('categoryPieChart');
+                    const containerRect = container.getBoundingClientRect();
+                    const tooltipRect = tooltip.getBoundingClientRect();
+                    const scrollX = window.scrollX || window.pageXOffset;
+                    const scrollY = window.scrollY || window.pageYOffset;
+
+                    const containerLeft = containerRect.left + scrollX;
+                    const containerRight = containerRect.right + scrollX;
+                    const containerTop = containerRect.top + scrollY;
+                    const containerBottom = containerRect.bottom + scrollY;
+
+                    let left = event.pageX + 15;
+                    let top = event.pageY - 15;
+
+                    if (left + tooltipRect.width > containerRight) {
+                        left = event.pageX - tooltipRect.width - 15;
+                    }
+
+                    if (left < containerLeft) {
+                        left = containerLeft;
+                    }
+
+                    if (top + tooltipRect.height > containerBottom) {
+                        top = event.pageY - tooltipRect.height - 15;
+                    }
+
+                    if (top < containerTop) {
+                        top = containerTop;
+                    }
+
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = top + 'px';
                 })
                 .on("mouseout", function (d) {
                     d3.select(this)
