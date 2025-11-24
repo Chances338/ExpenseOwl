@@ -323,23 +323,45 @@
 
             const tooltip = document.getElementById('chartTooltip');
 
-            arcs.append("path")
-                .attr("d", arc)
+            const paths = arcs.append("path")
                 .attr("fill", d => categoryColors[d.data.category])
-                .attr("stroke", "#1a1a1a")
-                .style("stroke-width", "1px")
-                .on("mouseover", function (event, d) {
-                    d3.select(this).style("opacity", 0.8);
+                .attr("stroke", "none")
+                .style("stroke-width", "1px");
 
-                    const category = d.data.category;
-                    const total = d.data.total;
-                    const percentage = d.data.percentage.toFixed(1);
+            paths.transition()
+                .ease(d3.easeLinear)
+                .duration(d => (d.endAngle - d.startAngle) / (2 * Math.PI) * 500)
+                .delay(d => d.startAngle / (2 * Math.PI) * 500)
+                .attrTween("d", function (d) {
+                    const i = d3.interpolate(d.startAngle, d.endAngle);
+                    return function (t) {
+                        return arc({ ...d, endAngle: i(t) });
+                    };
+                })
+                .on("end", function () {
+                    d3.select(this).attr("stroke", "#1a1a1a");
+                });
 
-                    const expenses = monthExpenses
-                        .filter(e => e.category === category && e.amount < 0)
-                        .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+            const arcHover = d3.arc()
+                .innerRadius(radius * 0.49)
+                .outerRadius(radius * 0.93);
 
-                    let html = `
+            paths.on("mouseover", function (event, d) {
+                d3.select(this)
+                    .style("filter", "saturate(2)")
+                    .transition()
+                    .duration(200)
+                    .attr("d", arcHover);
+
+                const category = d.data.category;
+                const total = d.data.total;
+                const percentage = d.data.percentage.toFixed(1);
+
+                const expenses = monthExpenses
+                    .filter(e => e.category === category && e.amount < 0)
+                    .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+
+                let html = `
                         <div class="tooltip-header">
                             <span>${category} (${percentage}%)</span>
                             <span>${formatCurrency(total)}</span>
@@ -347,26 +369,30 @@
                         <ul class="tooltip-list">
                     `;
 
-                    expenses.forEach(exp => {
-                        html += `
+                expenses.forEach(exp => {
+                    html += `
                             <li class="tooltip-item">
                                 <span class="name">${exp.name}</span>
                                 <span class="amount">${formatCurrency(Math.abs(exp.amount))}</span>
                             </li>
                         `;
-                    });
+                });
 
-                    html += `</ul>`;
+                html += `</ul>`;
 
-                    tooltip.innerHTML = html;
-                    tooltip.style.display = 'block';
-                })
+                tooltip.innerHTML = html;
+                tooltip.style.display = 'block';
+            })
                 .on("mousemove", function (event) {
                     tooltip.style.left = (event.pageX + 15) + 'px';
                     tooltip.style.top = (event.pageY - 15) + 'px';
                 })
                 .on("mouseout", function (d) {
-                    d3.select(this).style("opacity", 1);
+                    d3.select(this)
+                        .style("filter", "none")
+                        .transition()
+                        .duration(200)
+                        .attr("d", arc);
                     tooltip.style.display = 'none';
                 });
         }
