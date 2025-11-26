@@ -29,62 +29,13 @@
     </script>
     <title>ExpenseOwl Dashboard</title>
     <script src="/d3.min.js"></script>
-    <style>
-        .custom-tooltip {
-            position: absolute;
-            background: rgba(0, 0, 0, 0.9);
-            color: #fff;
-            padding: 10px;
-            border-radius: 4px;
-            pointer-events: none;
-            font-size: 12px;
-            z-index: 1000;
-            max-width: 260px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            border: 1px solid #444;
-        }
-
-        .tooltip-header {
-            font-weight: bold;
-            margin-bottom: 5px;
-            border-bottom: 1px solid #555;
-            padding-bottom: 3px;
-            display: flex;
-            justify-content: space-between;
-            gap: 30px;
-        }
-
-        .tooltip-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .tooltip-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 2px;
-        }
-
-        .tooltip-item .name {
-            margin-right: 10px;
-            opacity: 0.8;
-        }
-
-        .tooltip-item .amount {
-            font-family: monospace;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
         <header>
             <div class="nav-bar">
                 <a href="/">
-                    <img src="/pwa/icon-192.png" alt="ExpenseOwl Logo" height="85"
-                        style="vertical-align: middle; margin-right: 20px;">
+                    <img src="/pwa/icon-192.png" alt="ExpenseOwl Logo" height="85" style="vertical-align: middle; margin-right: 20px;">
                 </a>
                 <a href="/" class="view-button active" data-tooltip="Dashboard">
                     <i class="fa-solid fa-chart-pie"></i>
@@ -115,12 +66,14 @@
                         <label for="name">Name</label>
                         <input type="text" id="name" value="-" required>
                     </div>
+
                     <div class="form-group">
                         <label for="category">Category</label>
                         <select id="category" required>
                             <option value="">categories</option>
                         </select>
                     </div>
+
                     <div class="form-group">
                         <label for="tags-input">Tags</label>
                         <div id="tags-input-container" class="tags-input-container">
@@ -129,10 +82,12 @@
                         </div>
                         <div id="tags-dropdown" class="tags-dropdown"></div>
                     </div>
+
                     <div class="form-group">
                         <label for="amount">Amount</label>
                         <input type="number" id="amount" step="0.01" min="0.01" max="9000000000000000" required>
                     </div>
+
                     <div class="form-group">
                         <label for="date">Date</label>
                         <input type="date" id="date" required>
@@ -145,18 +100,20 @@
                             document.getElementById('date').value = formattedDate;
                         </script>
                     </div>
+
                     <div class="form-group form-group-checkbox">
                         <label for="reportGain">Report Gain</label>
                         <input type="checkbox" id="reportGain" class="styled-checkbox">
                     </div>
+
                     <button type="submit" class="nav-button">Add Expense</button>
                 </form>
                 <div id="formMessage" class="form-message"></div>
             </div>
         </div>
+
         <div class="chart-container">
-            <div id="noDataMessage" class="no-data" style="display: none; width: 100%;">No expenses recorded this month.
-            </div>
+            <div id="noDataMessage" class="no-data" style="display: none; width: 100%;">No expenses recorded this month.</div>
             <div class="chart-box">
                 <div id="categoryPieChart"
                     style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
@@ -165,6 +122,7 @@
             <div class="legend-box" id="customLegend">
             </div>
         </div>
+
         <div id="cashflow-section" class="cashflow-container">
             <div class="cashflow-item income">
                 <div class="cashflow-label">Income</div>
@@ -181,7 +139,6 @@
         </div>
     </div>
     <div id="chartTooltip" class="custom-tooltip" style="display: none;"></div>
-    </div>
 
     <script src="/functions.js"></script>
     <script>
@@ -373,48 +330,48 @@
                 tooltip.innerHTML = html;
                 tooltip.style.display = 'block';
             })
-                .on("mousemove", function (event) {
-                    const container = document.getElementById('categoryPieChart');
-                    const containerRect = container.getBoundingClientRect();
-                    const tooltipRect = tooltip.getBoundingClientRect();
-                    const scrollX = window.scrollX || window.pageXOffset;
-                    const scrollY = window.scrollY || window.pageYOffset;
+            .on("mousemove", function (event) {
+                const container = document.getElementById('categoryPieChart');
+                const containerRect = container.getBoundingClientRect();
+                const tooltipRect = tooltip.getBoundingClientRect();
+                const scrollX = window.scrollX || window.pageXOffset;
+                const scrollY = window.scrollY || window.pageYOffset;
 
-                    const containerLeft = containerRect.left + scrollX;
-                    const containerRight = containerRect.right + scrollX;
-                    const containerTop = containerRect.top + scrollY;
-                    const containerBottom = containerRect.bottom + scrollY;
+                const containerLeft = containerRect.left + scrollX;
+                const containerRight = containerRect.right + scrollX;
+                const containerTop = containerRect.top + scrollY;
+                const containerBottom = containerRect.bottom + scrollY;
 
-                    let left = event.pageX + 15;
-                    let top = event.pageY - 15;
+                let left = event.pageX + 15;
+                let top = event.pageY - 15;
 
-                    if (left + tooltipRect.width > containerRight) {
-                        left = event.pageX - tooltipRect.width - 15;
-                    }
+                if (left + tooltipRect.width > containerRight) {
+                    left = event.pageX - tooltipRect.width - 15;
+                }
 
-                    if (left < containerLeft) {
-                        left = containerLeft;
-                    }
+                if (left < containerLeft) {
+                    left = containerLeft;
+                }
 
-                    if (top + tooltipRect.height > containerBottom) {
-                        top = event.pageY - tooltipRect.height - 15;
-                    }
+                if (top + tooltipRect.height > containerBottom) {
+                    top = event.pageY - tooltipRect.height - 15;
+                }
 
-                    if (top < containerTop) {
-                        top = containerTop;
-                    }
+                if (top < containerTop) {
+                    top = containerTop;
+                }
 
-                    tooltip.style.left = left + 'px';
-                    tooltip.style.top = top + 'px';
-                })
-                .on("mouseout", function (d) {
-                    d3.select(this)
-                        .style("filter", "none")
-                        .transition()
-                        .duration(200)
-                        .attr("d", arc);
-                    tooltip.style.display = 'none';
-                });
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            })
+            .on("mouseout", function (d) {
+                d3.select(this)
+                    .style("filter", "none")
+                    .transition()
+                    .duration(200)
+                    .attr("d", arc);
+                tooltip.style.display = 'none';
+            });
         }
 
         function updateLegend(categoryData) {
