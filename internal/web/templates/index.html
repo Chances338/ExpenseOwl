@@ -144,6 +144,7 @@
     <script>
         let currentCurrency = 'usd';
         let startDate = 1;
+        let showRadialDays = false;
         let pieChart = null;
         let currentDate = new Date();
         let allExpenses = [];
@@ -288,6 +289,195 @@
                 .on("end", function () {
                     d3.select(this).attr("stroke", "#1a1a1a");
                 });
+
+            // Radial Days Logic
+            if (showRadialDays) {
+                const today = new Date();
+                const viewedMonth = currentDate.getMonth();
+                const viewedYear = currentDate.getFullYear();
+                const currentMonth = today.getMonth();
+                const currentYear = today.getFullYear();
+
+                const isPastMonth = viewedYear < currentYear || (viewedYear === currentYear && viewedMonth < currentMonth);
+                const isCurrentMonth = viewedYear === currentYear && viewedMonth === currentMonth;
+
+                const daysInViewedMonth = new Date(viewedYear, viewedMonth + 1, 0).getDate();
+                
+                let blocksToShow = 0;
+                let showText = false;
+                let daysLeft = 0;
+
+                if (isPastMonth) {
+                    blocksToShow = daysInViewedMonth;
+                    showText = false;
+                } else if (isCurrentMonth) {
+                    blocksToShow = today.getDate();
+                    showText = true;
+                    daysLeft = daysInViewedMonth - blocksToShow;
+                } else { // Future
+                    blocksToShow = 0;
+                    showText = true;
+                    daysLeft = daysInViewedMonth;
+                }
+
+                const innerRadius = radius * 0.35;
+                const outerRadius = radius * 0.45;
+                const anglePerDay = (2 * Math.PI) / daysInViewedMonth;
+
+                const dayArc = d3.arc()
+                    .innerRadius(innerRadius)
+                    .outerRadius(outerRadius)
+                    .startAngle(d => d * anglePerDay)
+                    .endAngle(d => (d + 1) * anglePerDay - 0.05); // 0.05 gap
+
+                const dayArcHover = d3.arc()
+                    .innerRadius(innerRadius * 0.9)
+                    .outerRadius(outerRadius)
+                    .startAngle(d => d * anglePerDay)
+                    .endAngle(d => (d + 1) * anglePerDay - 0.05);
+
+                const daysGroup = svg.append("g").attr("class", "radial-days");
+
+                // Draw blocks
+                for (let i = 0; i < blocksToShow; i++) {
+                    const day = i + 1;
+                    const hasExpenses = monthExpenses.some(e => {
+                        const expenseDate = new Date(e.date);
+                        return expenseDate.getDate() === day;
+                    });
+                    const baseOpacity = hasExpenses ? 0.6 : 0.3;
+
+                    daysGroup.append("path")
+                        .attr("d", dayArc(i))
+                        .attr("class", "radial-block")
+                        .attr("opacity", 0)
+                        .on("mouseover", function(event) {
+                            d3.select(this)
+                                .transition()
+                                .duration(200)
+                                .attr("d", dayArcHover(i))
+                                .attr("opacity", 1);
+
+                            const dayExpenses = monthExpenses.filter(e => {
+                                const expenseDate = new Date(e.date);
+                                return expenseDate.getDate() === day;
+                            });
+
+                            const monthName = new Date(viewedYear, viewedMonth).toLocaleString('default', { month: 'short' });
+                            const totalSpent = dayExpenses.reduce((sum, exp) => {
+                                return exp.amount < 0 ? sum + Math.abs(exp.amount) : sum;
+                            }, 0);
+                            
+                            let html = `
+                                <div class="tooltip-header">
+                                    <span>${monthName} ${day}</span>
+                                    <span>${formatCurrency(totalSpent)}</span>
+                                </div>
+                                <ul class="tooltip-list">
+                            `;
+
+                            if (dayExpenses.length === 0) {
+                                html += `<li class="tooltip-item"><span class="name">No expenses</span></li>`;
+                            } else {
+                                dayExpenses.forEach(exp => {
+                                    html += `
+                                        <li class="tooltip-item">
+                                            <span class="name">${exp.name}</span>
+                                            <span class="amount">${formatCurrency(Math.abs(exp.amount))}</span>
+                                        </li>
+                                    `;
+                                });
+                            }
+
+                            html += `</ul>`;
+
+                            tooltip.innerHTML = html;
+                            tooltip.style.display = 'block';
+                        })
+                        .on("mousemove", function(event) {
+                            const container = document.getElementById('categoryPieChart');
+                            const containerRect = container.getBoundingClientRect();
+                            const tooltipRect = tooltip.getBoundingClientRect();
+                            const scrollX = window.scrollX || window.pageXOffset;
+                            const scrollY = window.scrollY || window.pageYOffset;
+
+                            const containerLeft = containerRect.left + scrollX;
+                            const containerRight = containerRect.right + scrollX;
+                            const containerTop = containerRect.top + scrollY;
+                            const containerBottom = containerRect.bottom + scrollY;
+
+                            let left = event.pageX + 15;
+                            let top = event.pageY - 15;
+
+                            if (left + tooltipRect.width > containerRight) {
+                                left = event.pageX - tooltipRect.width - 15;
+                            }
+
+                            if (left < containerLeft) {
+                                left = containerLeft;
+                            }
+
+                            if (top + tooltipRect.height > containerBottom) {
+                                top = event.pageY - tooltipRect.height - 15;
+                            }
+
+                            if (top < containerTop) {
+                                top = containerTop;
+                            }
+
+                            tooltip.style.left = left + 'px';
+                            tooltip.style.top = top + 'px';
+                        })
+                        .on("mouseout", function() {
+                            d3.select(this)
+                                .transition()
+                                .duration(200)
+                                .attr("d", dayArc(i))
+                                .attr("opacity", baseOpacity);
+                            tooltip.style.display = 'none';
+                        })
+                        .transition()
+                        .delay(i * 20)
+                        .duration(200)
+                        .attr("opacity", baseOpacity);
+                }
+
+                // Center Text
+                if (isCurrentMonth) {
+                    const currentDay = today.getDate();
+                    const daysLeft = daysInViewedMonth - currentDay;
+                    svg.append("text")
+                        .attr("text-anchor", "middle")
+                        .attr("dy", "0em")
+                        .attr("class", "radial-text")
+                        .style("font-size", "2rem")
+                        .style("font-weight", "bold")
+                        .text(daysLeft)
+                        .append("tspan")
+                        .attr("x", 0)
+                        .attr("dy", "1.5em")
+                        .style("font-size", "0.8rem")
+                        .style("font-weight", "normal")
+                        .text("days left");
+                } else if (isPastMonth) {
+                    // No text for past months
+                } else {
+                    // Future month
+                    svg.append("text")
+                        .attr("text-anchor", "middle")
+                        .attr("dy", "0em")
+                        .attr("class", "radial-text")
+                        .style("font-size", "2rem")
+                        .style("font-weight", "bold")
+                        .text(daysInViewedMonth)
+                        .append("tspan")
+                        .attr("x", 0)
+                        .attr("dy", "1.5em")
+                        .style("font-size", "0.8rem")
+                        .style("font-weight", "normal")
+                        .text("days left");
+                }
+            }
 
             const arcHover = d3.arc()
                 .innerRadius(radius * 0.49)
@@ -445,6 +635,7 @@
                 ).join('');
                 currentCurrency = config.currency;
                 startDate = config.startDate;
+                showRadialDays = config.showRadialDays;
 
                 const response = await fetch('/expenses');
                 if (!response.ok) throw new Error('Failed to fetch data');
