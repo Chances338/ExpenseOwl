@@ -914,3 +914,19 @@ header {
 .table-controls label:hover {
     background-color: var(--accent);
 }
+
+.radial-block {
+    fill: #ffffff;
+}
+
+.radial-text {
+    fill: #ffffff;
+}
+
+html[data-theme='light'] .radial-block {
+    fill: #1a1a1a; /* Dark color for light theme */
+}
+
+html[data-theme='light'] .radial-text {
+    fill: #1a1a1a;
+}

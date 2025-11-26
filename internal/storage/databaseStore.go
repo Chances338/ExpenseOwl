@@ -50,7 +50,8 @@ const (
 		id VARCHAR(255) PRIMARY KEY DEFAULT 'default',
 		categories TEXT NOT NULL,
 		currency VARCHAR(255) NOT NULL,
-		start_date INTEGER NOT NULL
+		start_date INTEGER NOT NULL,
+		show_radial_days BOOLEAN DEFAULT FALSE
 	);`
 )
 
@@ -94,14 +95,15 @@ func (s *databaseStore) saveConfig(config *Config) error {
 		return fmt.Errorf("failed to marshal categories: %v", err)
 	}
 	query := `
-		INSERT INTO config (id, categories, currency, start_date)
-		VALUES ('default', $1, $2, $3)
+		INSERT INTO config (id, categories, currency, start_date, show_radial_days)
+		VALUES ('default', $1, $2, $3, $4)
 		ON CONFLICT (id) DO UPDATE SET
 			categories = EXCLUDED.categories,
 			currency = EXCLUDED.currency,
-			start_date = EXCLUDED.start_date;
+			start_date = EXCLUDED.start_date,
+			show_radial_days = EXCLUDED.show_radial_days;
 	`
-	_, err = s.db.Exec(query, string(categoriesJSON), config.Currency, config.StartDate)
+	_, err = s.db.Exec(query, string(categoriesJSON), config.Currency, config.StartDate, config.ShowRadialDays)
 	s.defaults["currency"] = config.Currency
 	s.defaults["start_date"] = fmt.Sprintf("%d", config.StartDate)
 	return err
@@ -119,10 +121,11 @@ func (s *databaseStore) updateConfig(updater func(c *Config) error) error {
 }
 
 func (s *databaseStore) GetConfig() (*Config, error) {
-	query := `SELECT categories, currency, start_date FROM config WHERE id = 'default'`
+	query := `SELECT categories, currency, start_date, show_radial_days FROM config WHERE id = 'default'`
 	var categoriesStr, currency string
 	var startDate int
-	err := s.db.QueryRow(query).Scan(&categoriesStr, &currency, &startDate)
+	var showRadialDays bool
+	err := s.db.QueryRow(query).Scan(&categoriesStr, &currency, &startDate, &showRadialDays)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -139,6 +142,7 @@ func (s *databaseStore) GetConfig() (*Config, error) {
 	var config Config
 	config.Currency = currency
 	config.StartDate = startDate
+	config.ShowRadialDays = showRadialDays
 	if err := json.Unmarshal([]byte(categoriesStr), &config.Categories); err != nil {
 		return nil, fmt.Errorf("failed to parse categories from db: %v", err)
 	}
@@ -199,6 +203,21 @@ func (s *databaseStore) UpdateStartDate(startDate int) error {
 	}
 	return s.updateConfig(func(c *Config) error {
 		c.StartDate = startDate
+		return nil
+	})
+}
+
+func (s *databaseStore) GetShowRadialDays() (bool, error) {
+	config, err := s.GetConfig()
+	if err != nil {
+		return false, err
+	}
+	return config.ShowRadialDays, nil
+}
+
+func (s *databaseStore) UpdateShowRadialDays(show bool) error {
+	return s.updateConfig(func(c *Config) error {
+		c.ShowRadialDays = show
 		return nil
 	})
 }

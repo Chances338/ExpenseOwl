@@ -162,6 +162,38 @@ func (h *Handler) UpdateStartDate(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "success"})
 }
 
+func (h *Handler) GetShowRadialDays(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, ErrorResponse{Error: "Method not allowed"})
+		return
+	}
+	show, err := h.storage.GetShowRadialDays()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to get ShowRadialDays setting"})
+		log.Printf("API ERROR: Failed to get ShowRadialDays setting: %v\n", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, show)
+}
+
+func (h *Handler) UpdateShowRadialDays(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		writeJSON(w, http.StatusMethodNotAllowed, ErrorResponse{Error: "Method not allowed"})
+		return
+	}
+	var show bool
+	if err := json.NewDecoder(r.Body).Decode(&show); err != nil {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+	if err := h.storage.UpdateShowRadialDays(show); err != nil {
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		log.Printf("API ERROR: Failed to update show radial days setting: %v\n", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "success"})
+}
+
 // ------------------------------------------------------------
 // Expense Handlers
 // ------------------------------------------------------------

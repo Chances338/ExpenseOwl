@@ -81,6 +81,17 @@
 
         <div class="settings-container">
             <div class="form-container half-width">
+                <h2 align="center">Visual Settings</h2>
+                <div class="form-group form-group-checkbox" style="justify-content: center; margin-top: 1rem;">
+                    <label for="showRadialDays">Show Radial Days</label>
+                    <input type="checkbox" id="showRadialDays" class="styled-checkbox">
+                </div>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button id="saveVisualSettings" class="nav-button">Save</button>
+                </div>
+                <div id="visualSettingsMessage" class="form-message"></div>
+            </div>
+            <div class="form-container half-width">
                 <h2 align="center">Theme Settings</h2>
                 <div class="theme-selector">
                     <select id="themeSelect">
@@ -252,6 +263,7 @@
         let editFormSelectedTags = new Set();
         let currentCurrency = "usd";
         let currentStartDate = 1;
+        let currentShowRadialDays = false;
         let draggedItem = null;
         let recurringExpenses = [];
         let recurringExpenseToDelete = null;
@@ -525,10 +537,29 @@
                 showMessage('startDateMessage', response.ok ? 'Start date saved successfully' : 'Failed to save start date', response.ok);
             } catch (error) {
                 console.error('Error saving start date:', error);
-                showMessage('startDateMessage', 'Error saving start date', false);
             }
         }
         
+        async function saveVisualSettings() {
+            const show = document.getElementById('showRadialDays').checked;
+            try {
+                const response = await fetch('/showradialdays/edit', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(show)
+                });
+                if (response.ok) {
+                    showMessage('visualSettingsMessage', 'Visual settings saved successfully', true);
+                    currentShowRadialDays = show;
+                } else {
+                    showMessage('visualSettingsMessage', 'Failed to save visual settings', false);
+                }
+            } catch (error) {
+                console.error('Error saving visual settings:', error);
+                showMessage('visualSettingsMessage', 'Error saving visual settings', false);
+            }
+        }
+
         async function fetchAndRenderRecurringExpenses() {
             try {
                 const response = await fetch('/recurring-expenses');
@@ -784,6 +815,7 @@
                 categories = [...config.categories];
                 currentCurrency = config.currency;
                 currentStartDate = config.startDate;
+                currentShowRadialDays = config.showRadialDays;
                 allTags.clear();
                 (expenses || []).forEach(exp => (exp.tags || []).forEach(tag => allTags.add(tag)));
                 (recurringExpenses || []).forEach(exp => (exp.tags || []).forEach(tag => allTags.add(tag)));
@@ -791,6 +823,8 @@
                 renderCategories();
                 populateCurrencySelect();
                 populateStartDateInput();
+                document.getElementById('showRadialDays').checked = currentShowRadialDays;
+                document.getElementById('saveVisualSettings').addEventListener('click', saveVisualSettings);
                 document.getElementById('recurringCategory').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
                 document.getElementById('editRecurringCategory').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
                 renderRecurringExpenses(recurringExpenses);
