@@ -198,7 +198,9 @@ func (s *jsonStore) UpdateStartDate(startDate int) error {
 }
 
 func (s *jsonStore) GetShowRadialDays() (bool, error) {
-	config, err := s.GetConfig()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	config, err := s.readConfigFile(s.configPath)
 	if err != nil {
 		return false, err
 	}
@@ -208,12 +210,37 @@ func (s *jsonStore) GetShowRadialDays() (bool, error) {
 func (s *jsonStore) UpdateShowRadialDays(show bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	data, err := s.readConfigFile(s.configPath)
+
+	config, err := s.readConfigFile(s.configPath)
 	if err != nil {
-		return fmt.Errorf("failed to read config file: %v", err)
+		return err
 	}
-	data.ShowRadialDays = show
-	return s.writeConfigFile(s.configPath, data)
+
+	config.ShowRadialDays = show
+	return s.writeConfigFile(s.configPath, config)
+}
+
+func (s *jsonStore) GetShowBudgetLine() (bool, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	config, err := s.readConfigFile(s.configPath)
+	if err != nil {
+		return false, err
+	}
+	return config.ShowBudgetLine, nil
+}
+
+func (s *jsonStore) UpdateShowBudgetLine(show bool) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	config, err := s.readConfigFile(s.configPath)
+	if err != nil {
+		return err
+	}
+
+	config.ShowBudgetLine = show
+	return s.writeConfigFile(s.configPath, config)
 }
 
 func (s *jsonStore) GetRecurringExpenses() ([]RecurringExpense, error) {

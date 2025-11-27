@@ -24,6 +24,8 @@ type Storage interface {
 	UpdateStartDate(startDate int) error
 	GetShowRadialDays() (bool, error)
 	UpdateShowRadialDays(show bool) error
+	GetShowBudgetLine() (bool, error)
+	UpdateShowBudgetLine(show bool) error
 
 	// Recurring Expenses
 	GetRecurringExpenses() ([]RecurringExpense, error)
@@ -52,6 +54,7 @@ type Config struct {
 	Currency          string             `json:"currency"`
 	StartDate         int                `json:"startDate"`
 	ShowRadialDays    bool               `json:"showRadialDays"`
+	ShowBudgetLine    bool               `json:"showBudgetLine"`
 	RecurringExpenses []RecurringExpense `json:"recurringExpenses"`
 	// Tags              []string           `json:"tags"`
 }
@@ -101,6 +104,7 @@ func (c *Config) SetBaseConfig() {
 	c.Currency = "usd"
 	c.StartDate = 1
 	c.ShowRadialDays = false
+	c.ShowBudgetLine = false
 	// c.Tags = []string{}
 	c.RecurringExpenses = []RecurringExpense{}
 }

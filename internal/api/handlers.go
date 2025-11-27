@@ -194,6 +194,32 @@ func (h *Handler) UpdateShowRadialDays(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "success"})
 }
 
+func (h *Handler) GetShowBudgetLine(w http.ResponseWriter, r *http.Request) {
+	show, err := h.storage.GetShowBudgetLine()
+	if err != nil {
+		http.Error(w, "Failed to get show budget line setting", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]bool{"show": show})
+}
+
+func (h *Handler) UpdateShowBudgetLine(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Show bool `json:"show"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.storage.UpdateShowBudgetLine(req.Show); err != nil {
+		http.Error(w, "Failed to update show budget line setting", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // ------------------------------------------------------------
 // Expense Handlers
 // ------------------------------------------------------------

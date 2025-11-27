@@ -145,6 +145,7 @@
         let currentCurrency = 'usd';
         let startDate = 1;
         let showRadialDays = false;
+        let showBudgetLine = false;
         let pieChart = null;
         let currentDate = new Date();
         let allExpenses = [];
@@ -476,8 +477,73 @@
                         .style("font-size", "0.8rem")
                         .style("font-weight", "normal")
                         .text("days left");
+                    }
+            }
+
+            // Budget Line Logic
+            if (showBudgetLine) {
+                const totalIncome = calculateIncome(monthExpenses);
+                const totalExpenses = calculateExpenses(monthExpenses);
+                
+                if (totalIncome > 0) {
+                    const budgetRadius = radius * 0.95;
+                    const budgetWidth = 4; // px
+
+                    const budgetGroup = svg.append("g").attr("class", "budget-line");
+
+                    // Background circle (100% budget)
+                    const bgArc = d3.arc()
+                        .innerRadius(budgetRadius)
+                        .outerRadius(budgetRadius + budgetWidth)
+                        .startAngle(0)
+                        .endAngle(2 * Math.PI);
+                    
+                    budgetGroup.append("path")
+                        .attr("d", bgArc)
+                        .attr("fill", "var(--border)")
+                        .attr("opacity", 0.3);
+
+                    // Expense Arcs (Multi-loop)
+                    const initialRatio = totalExpenses / totalIncome;
+                    let remainingRatio = initialRatio;
+                    let layer = 0;
+
+                    while (remainingRatio > 0.001) {
+                        const drawRatio = Math.min(remainingRatio, 1);
+                        const endAngle = drawRatio * 2 * Math.PI;
+                        
+                        let color;
+                        if (layer === 0) {
+                            if (initialRatio > 0.85 && initialRatio < 1) {
+                                color = "#ff9900";
+                            } else {
+                                color = "var(--accent)";
+                            }
+                        }
+                        else if (layer === 1) color = "#f00000";
+                        else if (layer === 2) color = "#900000";
+                        else color = "#400000";
+
+                        const loopArc = d3.arc()
+                            .innerRadius(budgetRadius)
+                            .outerRadius(budgetRadius + budgetWidth)
+                            .startAngle(0)
+                            .endAngle(endAngle);
+
+                        budgetGroup.append("path")
+                            .attr("d", loopArc)
+                            .attr("fill", color)
+                            .attr("class", `budget-arc layer-${layer}`);
+
+                        remainingRatio -= 1;
+                        layer++;
+                        
+                        // Safety break to prevent infinite loops in case of weird data
+                        if (layer > 10) break;
+                    }
                 }
             }
+
 
             const arcHover = d3.arc()
                 .innerRadius(radius * 0.49)
@@ -636,6 +702,7 @@
                 currentCurrency = config.currency;
                 startDate = config.startDate;
                 showRadialDays = config.showRadialDays;
+                showBudgetLine = config.showBudgetLine;
 
                 const response = await fetch('/expenses');
                 if (!response.ok) throw new Error('Failed to fetch data');
