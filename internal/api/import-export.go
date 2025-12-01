@@ -108,9 +108,9 @@ func (h *Handler) ImportCSV(w http.ResponseWriter, r *http.Request) {
 	}
 	categorySet := make(map[string]bool)
 	for _, cat := range currentCategories {
-		categorySet[strings.ToLower(cat)] = true
+		categorySet[strings.ToLower(cat.Name)] = true
 	}
-	var newCategories []string
+	var newCategories []storage.Category
 	var importedCount, skippedCount int
 	// TODO: might be worth setting default currency when we have currency updation behavior
 	currencyVal, err := h.storage.GetCurrency()
@@ -163,7 +163,7 @@ func (h *Handler) ImportCSV(w http.ResponseWriter, r *http.Request) {
 		}
 		category := strings.TrimSpace(record[colMap["category"]])
 		if _, ok := categorySet[strings.ToLower(category)]; !ok {
-			newCategories = append(newCategories, category)
+			newCategories = append(newCategories, storage.Category{Name: category, Icon: "🏷️"})
 			categorySet[strings.ToLower(category)] = true // Add to set to handle duplicates in the same file
 		}
 		var tags []string
@@ -262,9 +262,9 @@ func (h *Handler) ImportOldCSV(w http.ResponseWriter, r *http.Request) {
 	}
 	categorySet := make(map[string]bool)
 	for _, cat := range currentCategories {
-		categorySet[strings.ToLower(cat)] = true
+		categorySet[strings.ToLower(cat.Name)] = true
 	}
-	var newCategories []string
+	var newCategories []storage.Category
 	var importedCount, skippedCount int
 
 	for i, record := range records[1:] {
@@ -287,7 +287,7 @@ func (h *Handler) ImportOldCSV(w http.ResponseWriter, r *http.Request) {
 		}
 		category := strings.TrimSpace(record[colMap["category"]])
 		if _, ok := categorySet[strings.ToLower(category)]; !ok {
-			newCategories = append(newCategories, category)
+			newCategories = append(newCategories, storage.Category{Name: category, Icon: "🏷️"})
 			categorySet[strings.ToLower(category)] = true // Add to set to handle duplicates in the same file
 		}
 

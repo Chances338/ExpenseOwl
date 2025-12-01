@@ -151,6 +151,7 @@
         let allExpenses = [];
         let disabledCategories = new Set();
         let categoryColors = {};
+        let categoryIcons = {};
         let allTags = new Set();
         let selectedTags = new Set();
 
@@ -249,6 +250,17 @@
             const height = container.clientHeight;
             const radius = Math.min(width, height) / 2;
 
+            const getEmojiSize = (d) => {
+                const angle = d.endAngle - d.startAngle;
+                if (angle > 0.2) return 1.2;
+                if (angle > 0.0) {
+                    // Scale linearly between 0.05 (3 deg) and 0.2 (11 deg)
+                    // Map 0.05 -> 0.6rem, 0.2 -> 1.2rem
+                    return 0.6 + ((angle - 0.05) / (0.2 - 0.05)) * (1.2 - 0.6);
+                }
+                return 0;
+            };
+
             const svg = d3.select("#categoryPieChart")
                 .append("svg")
                 .attr("width", width)
@@ -289,6 +301,24 @@
                 })
                 .on("end", function () {
                     d3.select(this).attr("stroke", "#1a1a1a");
+                });
+
+            // Add Emoji Labels
+            svg.selectAll('text.emoji-label')
+                .data(pie(categoryData))
+                .enter()
+                .append('text')
+                .attr('class', 'emoji-label')
+                .attr('transform', d => `translate(${arc.centroid(d)})`)
+                .attr('dy', '0.35em')
+                .attr('text-anchor', 'middle')
+                .style('font-size', d => `${getEmojiSize(d)}rem`)
+                .style('pointer-events', 'none')
+                .text(d => {
+                    if (d.endAngle - d.startAngle > 0.0) {
+                        return categoryIcons[d.data.category] || '🏷️';
+                    }
+                    return '';
                 });
 
             // Radial Days Logic
@@ -556,6 +586,14 @@
                     .duration(200)
                     .attr("d", arcHover);
 
+                // Animate Emoji
+                svg.selectAll('.emoji-label')
+                    .filter(l => l.data.category === d.data.category)
+                    .transition()
+                    .duration(200)
+                    .attr("transform", `translate(${arcHover.centroid(d)})`)
+                    .style("font-size", `${getEmojiSize(d) * 1.2}rem`);
+
                 const category = d.data.category;
                 const total = d.data.total;
                 const percentage = d.data.percentage.toFixed(1);
@@ -626,6 +664,14 @@
                     .transition()
                     .duration(200)
                     .attr("d", arc);
+
+                // Reset Emoji
+                svg.selectAll('.emoji-label')
+                    .filter(l => l.data.category === d.data.category)
+                    .transition()
+                    .duration(200)
+                    .attr("transform", `translate(${arc.centroid(d)})`)
+                    .style("font-size", `${getEmojiSize(d)}rem`);
                 tooltip.style.display = 'none';
             });
         }
@@ -653,10 +699,11 @@
                 const categoryDataItem = categoryMap.get(category);
                 const percentage = categoryDataItem ? ` (${categoryDataItem.percentage.toFixed(1)}%)` : '';
                 const amount = categoryDataItem ? formatCurrency(categoryDataItem.total) : '';
+                const icon = categoryIcons[category] || '🏷️';
                 item.innerHTML = `
                     <div class="color-box" style="background-color: ${color}"></div>
                     <div class="legend-text">
-                        <span>${category}${percentage}</span>
+                        <span>${icon} ${category}${percentage}</span>
                         <span class="amount">${amount}</span>
                     </div>
                 `;
@@ -695,9 +742,15 @@
                 const configResponse = await fetch('/config');
                 if (!configResponse.ok) throw new Error('Failed to fetch configuration');
                 const config = await configResponse.json();
+                
+                categoryIcons = {};
+                config.categories.forEach(c => {
+                    categoryIcons[c.name] = c.icon;
+                });
+
                 const categorySelect = document.getElementById('category');
                 categorySelect.innerHTML = config.categories.map(cat =>
-                    `<option value="${cat}">${cat}</option>`
+                    `<option value="${cat.name}">${cat.name}</option>`
                 ).join('');
                 currentCurrency = config.currency;
                 startDate = config.startDate;

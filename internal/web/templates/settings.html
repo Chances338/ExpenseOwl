@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/fa.min.css">
     <link rel="stylesheet" href="/style.css">
+    <script src="/emoji-picker.js"></script>
     <script>
         (function() {
             const theme = localStorage.getItem('theme') || 'system';
@@ -274,6 +275,8 @@
         let recurringExpenses = [];
         let recurringExpenseToDelete = null;
         let recurringExpenseToEdit = null;
+        let emojiPicker = null;
+        let currentCategoryIndex = null;
 
         function showMessage(elementId, message, isSuccess) {
             const messageDiv = document.getElementById(elementId);
@@ -297,7 +300,8 @@
                 item.innerHTML = `
                     <div class="category-handle-area">
                         <span class="drag-handle"><i class="fa-solid fa-grip-lines"></i></span>
-                        <span>${category}</span>
+                        <button class="category-icon-btn" onclick="openIconPicker(event, ${index})">${category.icon || '🏷️'}</button>
+                        <span>${category.name}</span>
                     </div>
                     <button class="delete-button" onclick="removeCategory(${index})">
                         <i class="fa-solid fa-times"></i>
@@ -369,15 +373,16 @@
 
         function addCategory() {
             const input = document.getElementById('newCategory');
-            let category = input.value.trim();
-            category = category.replace(/[<>]/g, ' ').trim();
-            if (category && !categories.includes(category)) {
-                categories.push(category);
+            let categoryName = input.value.trim();
+            categoryName = categoryName.replace(/[<>]/g, ' ').trim();
+            
+            if (categoryName && !categories.some(c => c.name === categoryName)) {
+                categories.push({ name: categoryName, icon: '🏷️' });
                 renderCategories();
                 input.value = '';
-            } else if (categories.includes(category)) {
+            } else if (categories.some(c => c.name === categoryName)) {
                 showMessage('categoriesMessage', 'Category already exists', false);
-            } else if (!category) {
+            } else if (!categoryName) {
                 showMessage('categoriesMessage', 'Category name cannot be empty.', false);
             }
         }
@@ -850,8 +855,8 @@
                 document.getElementById('showRadialDays').checked = currentShowRadialDays;
                 document.getElementById('showBudgetLine').checked = currentShowBudgetLine;
                 document.getElementById('saveVisualSettings').addEventListener('click', saveVisualSettings);
-                document.getElementById('recurringCategory').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
-                document.getElementById('editRecurringCategory').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+                document.getElementById('recurringCategory').innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                document.getElementById('editRecurringCategory').innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
                 renderRecurringExpenses(recurringExpenses);
 
                 createTagInput('tags-input', 'selected-tags', 'tags-dropdown', addFormSelectedTags);
@@ -942,6 +947,22 @@
         window.showRecurringEditModal = showRecurringEditModal;
         window.closeRecurringEditModal = closeRecurringEditModal;
         window.confirmRecurringUpdate = confirmRecurringUpdate;
+        window.openIconPicker = function(event, index) {
+            event.stopPropagation();
+            if (!emojiPicker) {
+                emojiPicker = new EmojiPicker({
+                    onSelect: (emoji) => {
+                        if (currentCategoryIndex !== null) {
+                            categories[currentCategoryIndex].icon = emoji;
+                            renderCategories();
+                        }
+                    }
+                });
+            }
+            currentCategoryIndex = index;
+            emojiPicker.triggerElement = event.target;
+            emojiPicker.show(event.target.getBoundingClientRect());
+        };
     </script>
 </body>
 </html>

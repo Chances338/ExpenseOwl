@@ -160,7 +160,26 @@ func (s *databaseStore) GetConfig() (*Config, error) {
 	config.ShowRadialDays = showRadialDays
 	config.ShowBudgetLine = showBudgetLine
 	if err := json.Unmarshal([]byte(categoriesStr), &config.Categories); err != nil {
-		return nil, fmt.Errorf("failed to parse categories from db: %v", err)
+		var oldCats []string
+		if err2 := json.Unmarshal([]byte(categoriesStr), &oldCats); err2 == nil {
+			var newCats []Category
+			for _, name := range oldCats {
+				icon := "🏷️"
+				for _, def := range defaultCategories {
+					if def.Name == name {
+						icon = def.Icon
+						break
+					}
+				}
+				newCats = append(newCats, Category{Name: name, Icon: icon})
+			}
+			config.Categories = newCats
+			if err := s.saveConfig(&config); err != nil {
+				log.Printf("WARNING: Failed to save migrated config to DB: %v", err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to parse categories from db: %v", err)
+		}
 	}
 
 	recurring, err := s.GetRecurringExpenses()
@@ -172,7 +191,7 @@ func (s *databaseStore) GetConfig() (*Config, error) {
 	return &config, nil
 }
 
-func (s *databaseStore) GetCategories() ([]string, error) {
+func (s *databaseStore) GetCategories() ([]Category, error) {
 	config, err := s.GetConfig()
 	if err != nil {
 		return nil, err
@@ -180,7 +199,7 @@ func (s *databaseStore) GetCategories() ([]string, error) {
 	return config.Categories, nil
 }
 
-func (s *databaseStore) UpdateCategories(categories []string) error {
+func (s *databaseStore) UpdateCategories(categories []Category) error {
 	return s.updateConfig(func(c *Config) error {
 		c.Categories = categories
 		return nil

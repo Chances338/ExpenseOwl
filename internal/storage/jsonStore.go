@@ -61,6 +61,37 @@ func InitializeJsonStore(baseConfig SystemConfig) (*jsonStore, error) {
 		log.Println("Created expense storage config")
 	} else {
 		log.Println("Found existing expense storage config")
+		content, err := os.ReadFile(configPath)
+		if err == nil {
+			var rawConfig map[string]json.RawMessage
+			if err := json.Unmarshal(content, &rawConfig); err == nil {
+				if catRaw, ok := rawConfig["categories"]; ok {
+					var oldCats []string
+					if err := json.Unmarshal(catRaw, &oldCats); err == nil {
+						log.Println("Migrating categories from strings to objects...")
+						var newCats []Category
+						for _, name := range oldCats {
+							icon := "🏷️"
+							for _, def := range defaultCategories {
+								if def.Name == name {
+									icon = def.Icon
+									break
+								}
+							}
+							newCats = append(newCats, Category{Name: name, Icon: icon})
+						}
+						newCatsJson, _ := json.Marshal(newCats)
+						rawConfig["categories"] = json.RawMessage(newCatsJson)
+						newData, _ := json.MarshalIndent(rawConfig, "", "    ")
+						if err := os.WriteFile(configPath, newData, 0644); err != nil {
+							log.Printf("Failed to write migrated config: %v", err)
+						} else {
+							log.Println("Migration complete.")
+						}
+					}
+				}
+			}
+		}
 	}
 
 	return &jsonStore{
@@ -132,7 +163,7 @@ func (s *jsonStore) GetConfig() (*Config, error) {
 
 // Basic Config Updates
 
-func (s *jsonStore) GetCategories() ([]string, error) {
+func (s *jsonStore) GetCategories() ([]Category, error) {
 	config, err := s.GetConfig()
 	if err != nil {
 		return nil, err
@@ -140,7 +171,7 @@ func (s *jsonStore) GetCategories() ([]string, error) {
 	return config.Categories, nil
 }
 
-func (s *jsonStore) UpdateCategories(categories []string) error {
+func (s *jsonStore) UpdateCategories(categories []Category) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	data, err := s.readConfigFile(s.configPath)

@@ -14,8 +14,8 @@ type Storage interface {
 	GetConfig() (*Config, error)
 
 	// Basic Config Updates
-	GetCategories() ([]string, error)
-	UpdateCategories(categories []string) error
+	GetCategories() ([]Category, error)
+	UpdateCategories(categories []Category) error
 	// GetTags() ([]string, error)
 	// UpdateTags(tags []string) error
 	GetCurrency() (string, error)
@@ -50,13 +50,18 @@ type Storage interface {
 
 // config for expense data
 type Config struct {
-	Categories        []string           `json:"categories"`
+	Categories        []Category         `json:"categories"`
 	Currency          string             `json:"currency"`
 	StartDate         int                `json:"startDate"`
 	ShowRadialDays    bool               `json:"showRadialDays"`
 	ShowBudgetLine    bool               `json:"showBudgetLine"`
 	RecurringExpenses []RecurringExpense `json:"recurringExpenses"`
 	// Tags              []string           `json:"tags"`
+}
+
+type Category struct {
+	Name string `json:"name"`
+	Icon string `json:"icon"`
 }
 
 type RecurringExpense struct {
@@ -167,12 +172,14 @@ func SanitizeString(s string) string {
 	return strings.TrimSpace(sanitized)
 }
 
-func ValidateCategory(category string) (string, error) {
-	sanitized := SanitizeString(category)
-	if sanitized == "" {
-		return "", fmt.Errorf("category name cannot be empty or contain only invalid characters")
+func ValidateCategory(category Category) (Category, error) {
+	sanitizedName := SanitizeString(category.Name)
+	if sanitizedName == "" {
+		return Category{}, fmt.Errorf("category name cannot be empty or contain only invalid characters")
 	}
-	return sanitized, nil
+	category.Name = sanitizedName
+	// Icon validation could be added here if needed, but for now we accept any string (or empty)
+	return category, nil
 }
 
 func (e *Expense) Validate() error {
@@ -242,17 +249,17 @@ func (e *RecurringExpense) Validate() error {
 }
 
 // variables
-var defaultCategories = []string{
-	"Food",
-	"Groceries",
-	"Travel",
-	"Rent",
-	"Utilities",
-	"Entertainment",
-	"Healthcare",
-	"Shopping",
-	"Miscellaneous",
-	"Income",
+var defaultCategories = []Category{
+	{Name: "Food", Icon: "🍔"},
+	{Name: "Groceries", Icon: "🛒"},
+	{Name: "Travel", Icon: "✈️"},
+	{Name: "Rent", Icon: "🏠"},
+	{Name: "Utilities", Icon: "💡"},
+	{Name: "Entertainment", Icon: "🎬"},
+	{Name: "Healthcare", Icon: "🏥"},
+	{Name: "Shopping", Icon: "🛍️"},
+	{Name: "Miscellaneous", Icon: "📦"},
+	{Name: "Income", Icon: "💰"},
 }
 
 var SupportedCurrencies = []string{

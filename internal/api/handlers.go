@@ -75,17 +75,17 @@ func (h *Handler) UpdateCategories(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, ErrorResponse{Error: "Method not allowed"})
 		return
 	}
-	var categories []string
+	var categories []storage.Category
 	if err := json.NewDecoder(r.Body).Decode(&categories); err != nil {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid request body"})
 		return
 	}
-	var sanitizedCategories []string
+	var sanitizedCategories []storage.Category
 	for _, category := range categories {
 		sanitized, err := storage.ValidateCategory(category)
 		if err != nil {
 			log.Printf("API ERROR: Invalid category provided: %v\n", err)
-			writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("Invalid category '%s': %v", category, err)})
+			writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("Invalid category '%s': %v", category.Name, err)})
 			return
 		}
 		sanitizedCategories = append(sanitizedCategories, sanitized)
