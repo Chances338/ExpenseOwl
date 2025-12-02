@@ -253,11 +253,11 @@
 
             const getEmojiSize = (d) => {
                 const angle = d.endAngle - d.startAngle;
-                if (angle > 0.2) return 1.2;
-                if (angle > 0.0) {
-                    // Scale linearly between 0.05 (3 deg) and 0.2 (11 deg)
-                    // Map 0.05 -> 0.6rem, 0.2 -> 1.2rem
-                    return 0.6 + ((angle - 0.05) / (0.2 - 0.05)) * (1.2 - 0.6);
+                if (angle > 0.25) return 1.2;
+                if (angle > 0.02) {
+                    // Scale linearly between 0.02 (1.1 deg) and 0.25 (14 deg)
+                    // Map 0.02 -> 0.4rem, 0.25 -> 1.2rem
+                    return 0.4 + ((angle - 0.02) / (0.25 - 0.02)) * (1.2 - 0.4);
                 }
                 return 0;
             };
