@@ -565,13 +565,24 @@
                         const loopArc = d3.arc()
                             .innerRadius(budgetRadius)
                             .outerRadius(budgetRadius + budgetWidth)
-                            .startAngle(0)
-                            .endAngle(endAngle);
+                            .startAngle(0);
 
-                        budgetGroup.append("path")
-                            .attr("d", loopArc)
-                            .attr("fill", color)
-                            .attr("class", `budget-arc layer-${layer}`);
+                        const path = budgetGroup.append("path")
+                            .attr("class", `budget-arc layer-${layer}`)
+                            .attr("fill", "#69afde"); // Start with blue (accent color)
+
+                        path.transition()
+                            .duration(1000)
+                            .attrTween("d", function() {
+                                const i = d3.interpolate(0, endAngle);
+                                return function(t) {
+                                    loopArc.endAngle(i(t));
+                                    return loopArc();
+                                };
+                            })
+                            .transition()
+                            .duration(500)
+                            .attr("fill", color);
 
                         remainingRatio -= 1;
                         layer++;
@@ -605,6 +616,7 @@
                 const category = d.data.category;
                 const total = d.data.total;
                 const percentage = d.data.percentage.toFixed(1);
+                const icon = categoryIcons[category] || '🏷️';
 
                 const expenses = monthExpenses
                     .filter(e => e.category === category && e.amount < 0)
@@ -612,7 +624,7 @@
 
                 let html = `
                         <div class="tooltip-header">
-                            <span>${category} (${percentage}%)</span>
+                            <span>${icon} ${category} (${percentage}%)</span>
                             <span>${formatCurrency(total)}</span>
                         </div>
                         <ul class="tooltip-list">
