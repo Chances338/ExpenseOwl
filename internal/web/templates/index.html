@@ -246,8 +246,9 @@
             const container = document.getElementById('categoryPieChart');
             container.innerHTML = '';
 
-            const width = container.clientWidth;
-            const height = container.clientHeight;
+            const rect = container.getBoundingClientRect();
+            const width = rect.width || container.clientWidth || 300;
+            const height = rect.height || container.clientHeight || 300;
             const radius = Math.min(width, height) / 2;
 
             const getEmojiSize = (d) => {
