@@ -181,12 +181,14 @@ func (h *Handler) UpdateShowRadialDays(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, ErrorResponse{Error: "Method not allowed"})
 		return
 	}
-	var show bool
-	if err := json.NewDecoder(r.Body).Decode(&show); err != nil {
+	var req struct {
+		Show bool `json:"show"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid request body"})
 		return
 	}
-	if err := h.storage.UpdateShowRadialDays(show); err != nil {
+	if err := h.storage.UpdateShowRadialDays(req.Show); err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		log.Printf("API ERROR: Failed to update show radial days setting: %v\n", err)
 		return

@@ -314,12 +314,17 @@
                 .attr('text-anchor', 'middle')
                 .style('font-size', d => `${getEmojiSize(d)}rem`)
                 .style('pointer-events', 'none')
+                .style('opacity', 0)
                 .text(d => {
                     if (d.endAngle - d.startAngle > 0.0) {
                         return categoryIcons[d.data.category] || '🏷️';
                     }
                     return '';
-                });
+                })
+                .transition()
+                .delay(500)
+                .duration(500)
+                .style('opacity', 1);
 
             // Radial Days Logic
             if (showRadialDays) {
@@ -658,7 +663,7 @@
                 tooltip.style.left = left + 'px';
                 tooltip.style.top = top + 'px';
             })
-            .on("mouseout", function (d) {
+            .on("mouseout", function (event, d) {
                 d3.select(this)
                     .style("filter", "none")
                     .transition()
