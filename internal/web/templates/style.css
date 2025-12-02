@@ -712,8 +712,10 @@ header {
         width: 100%;
     }
 
-    .chart-box canvas {
+    .chart-box svg {
         max-height: 300px;
+        width: 100%;
+        height: auto;
     }
 
     .legend-box {

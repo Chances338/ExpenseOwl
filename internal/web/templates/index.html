@@ -263,8 +263,10 @@
 
             const svg = d3.select("#categoryPieChart")
                 .append("svg")
-                .attr("width", width)
-                .attr("height", height)
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMidYMid meet")
+                .style("width", "100%")
+                .style("height", "100%")
                 .append("g")
                 .attr("transform", `translate(${width / 2},${height / 2})`);
 
@@ -779,6 +781,14 @@
                 updateMonthDisplay();
                 updateChartAndLegend();
                 setupTagInput();
+
+                let resizeTimeout;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => {
+                        updateChartAndLegend();
+                    }, 250);
+                });
             } catch (error) {
                 console.error('Failed to initialize dashboard:', error);
             }
