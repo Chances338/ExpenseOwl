@@ -123,6 +123,7 @@
         let startDate = 1;
         let allTags = new Set();
         let selectedTags = new Set();
+        let categoryIcons = {};
 
         function createTable(expenses) {
             if (!expenses || expenses.length === 0) {
@@ -145,10 +146,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        ${expenses.map((expense, index) => `
+                        ${expenses.map((expense, index) => {
+                            const icon = categoryIcons[expense.category] || '🏷️';
+                            return `
                             <tr>
                                 <td>${escapeHTML(expense.name)}</td>
-                                <td>${escapeHTML(expense.category)}</td>
+                                <td>${icon} ${escapeHTML(expense.category)}</td>
                                 ${hasTags ? `<td class="tags-column">${(expense.tags || []).map(escapeHTML).join(', ')}</td>` : ''}
                                 <td class="amount">${formatCurrency(expense.amount)}</td>
                                 <td class="date-column">${formatDateFromUTC(expense.date)}</td>
@@ -161,7 +164,7 @@
                                     </button>
                                 </td>
                             </tr>
-                        `).join('')}
+                        `}).join('')}
                     </tbody>
                 </table>
             `;
@@ -307,9 +310,15 @@
                 const configResponse = await fetch('/config');
                 if (!configResponse.ok) throw new Error('Failed to fetch configuration');
                 const config = await configResponse.json();
+                
+                categoryIcons = {};
+                config.categories.forEach(c => {
+                    categoryIcons[c.name] = c.icon;
+                });
+
                 const categorySelect = document.getElementById('category');
                 categorySelect.innerHTML = config.categories.map(cat => 
-                    `<option value="${cat}">${cat}</option>`
+                    `<option value="${cat.name}">${cat.icon} ${cat.name}</option>`
                 ).join('');
                 currentCurrency = config.currency;
                 startDate = config.startDate;
@@ -318,6 +327,7 @@
                 if (!response.ok) throw new Error('Failed to fetch data');
                 const data = await response.json();
                 allExpenses = Array.isArray(data) ? data : (data && Array.isArray(data.expenses) ? data.expenses : []);
+                
                 
                 allTags.clear();
                 allExpenses.forEach(exp => {
